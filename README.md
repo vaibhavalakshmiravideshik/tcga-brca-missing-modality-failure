@@ -25,24 +25,40 @@ accessed programmatically via the [cBioPortal REST
 API](https://www.cbioportal.org/api). No data files are bundled in this repo;
 `01_data_acquisition.py` downloads everything needed.
 
+## Repository structure
+
+```
+proteogenomic-failure-analysis/
+├── README.md
+├── requirements.txt
+├── pipeline/          # all scripts, run in order from the repo root
+│   ├── utils.py        # shared dataset/model/loss/metric classes
+│   ├── 01_data_acquisition.py
+│   ├── 02_feature_screening_cv.py
+│   ├── 03_baselines.py
+│   ├── 04_architecture_ablation.py
+│   ├── 05_calibration.py
+│   ├── 06_ph_testing_dca.py
+│   ├── 07_missingness_stress_test.py
+│   └── 08_sensitivity_ablations.py
+└── results/            # created/populated by the pipeline; empty in the repo
+```
+
 ## Pipeline
 
-Run in order; each stage depends on outputs from earlier stages, all saved to
-`results/`.
+Run in order from the **repo root** (not from inside `pipeline/`); each stage
+depends on outputs from earlier stages, all saved to `results/`.
 
 | Script | What it does | Key output |
 |---|---|---|
-| `01_data_acquisition.py` | cBioPortal download, cohort construction, missingness handling | `target_df.csv`, `X_prot_final.csv`, `X_gen_tcga.csv` |
-| `02_feature_screening_cv.py` | Leakage-corrected 5-fold CV, primary reported result | `oof_risk_v2.npy` (OOF C-index 0.590) |
-| `03_baselines.py` | Elastic-net Cox, random survival forest, gradient-boosted survival | `baseline_oof.pkl` |
-| `04_architecture_ablation.py` | Impute+indicator baseline, training-time augmentation, paired significance tests | `oof_risk_notoken.npy`, `oof_risk_augmented.npy` |
-| `05_calibration.py` | Calibration slope, Brier score (corrected), recalibration | `oof_risk_recalibrated.npy` |
-| `06_ph_testing_dca.py` | Proportional hazards testing, stratified Cox, decision curve analysis | `dca_curves.pkl` |
-| `07_missingness_stress_test.py` | 5-seed averaged synthetic missingness stress test | `stress_test_results.pkl` |
-| `08_sensitivity_ablations.py` | Site-level (TSS) sensitivity, feature-count ablation | printed results |
-
-`utils.py` contains all shared classes and helper functions (dataset, model
-architecture, loss, metrics) used across every script.
+| `pipeline/01_data_acquisition.py` | cBioPortal download, cohort construction, missingness handling | `results/target_df.csv`, `results/X_prot_final.csv`, `results/X_gen_tcga.csv` |
+| `pipeline/02_feature_screening_cv.py` | Leakage-corrected 5-fold CV, primary reported result | `results/oof_risk_v2.npy` (OOF C-index 0.590) |
+| `pipeline/03_baselines.py` | Elastic-net Cox, random survival forest, gradient-boosted survival | `results/baseline_oof.pkl` |
+| `pipeline/04_architecture_ablation.py` | Impute+indicator baseline, training-time augmentation, paired significance tests | `results/oof_risk_notoken.npy`, `results/oof_risk_augmented.npy` |
+| `pipeline/05_calibration.py` | Calibration slope, Brier score (corrected), recalibration | `results/oof_risk_recalibrated.npy` |
+| `pipeline/06_ph_testing_dca.py` | Proportional hazards testing, stratified Cox, decision curve analysis | `results/dca_curves.pkl` |
+| `pipeline/07_missingness_stress_test.py` | 5-seed averaged synthetic missingness stress test | `results/stress_test_results.pkl` |
+| `pipeline/08_sensitivity_ablations.py` | Site-level (TSS) sensitivity, feature-count ablation | printed results |
 
 ## Setup
 
@@ -52,15 +68,17 @@ pip install -r requirements.txt
 
 ## Reproducing the paper's headline numbers
 
+Run all commands from the repository root:
+
 ```bash
-python 01_data_acquisition.py       # ~2-5 min, network-bound
-python 02_feature_screening_cv.py   # ~5-10 min, retrains 5 models
-python 03_baselines.py              # ~2-3 min
-python 04_architecture_ablation.py  # ~10-15 min, retrains 10 models
-python 05_calibration.py            # <1 min
-python 06_ph_testing_dca.py         # ~1-2 min
-python 07_missingness_stress_test.py  # ~15-20 min, retrains 5 models
-python 08_sensitivity_ablations.py    # ~20-30 min, retrains 15 models
+python pipeline/01_data_acquisition.py       # ~2-5 min, network-bound
+python pipeline/02_feature_screening_cv.py   # ~5-10 min, retrains 5 models
+python pipeline/03_baselines.py              # ~2-3 min
+python pipeline/04_architecture_ablation.py  # ~10-15 min, retrains 10 models
+python pipeline/05_calibration.py            # <1 min
+python pipeline/06_ph_testing_dca.py         # ~1-2 min
+python pipeline/07_missingness_stress_test.py  # ~15-20 min, retrains 5 models
+python pipeline/08_sensitivity_ablations.py    # ~20-30 min, retrains 15 models
 ```
 
 Each script prints its result alongside the reference value reported in the
